@@ -1,46 +1,61 @@
--- Basit Kontrol Paneli
 local ScreenGui = Instance.new("ScreenGui")
 local MainButton = Instance.new("TextButton")
 local UICorner = Instance.new("UICorner")
 
--- Panel Ayarları
-ScreenGui.Name = "CustomAimControl"
-ScreenGui.Parent = game:GetService("CoreGui") -- Delta kapansa da gitmemesi için
+ScreenGui.Name = "MM2_Garantili_Aim"
+ScreenGui.Parent = game:GetService("CoreGui")
 
-MainButton.Name = "ToggleButton"
 MainButton.Parent = ScreenGui
-MainButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-MainButton.Position = UDim2.new(0.05, 0, 0.4, 0) -- Ekranın sol ortası
-MainButton.Size = UDim2.new(0, 120, 0, 45)
-MainButton.Text = "AIM ÇALIŞTIR"
+MainButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+MainButton.Position = UDim2.new(0, 20, 0.5, 0)
+MainButton.Size = UDim2.new(0, 160, 0, 60)
+MainButton.Text = "AIMLOCK: KAPALI"
 MainButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 MainButton.Font = Enum.Font.SourceSansBold
 MainButton.TextSize = 18
-
 UICorner.Parent = MainButton
 
--- Tıklama Fonksiyonu
-MainButton.MouseButton1Click:Connect(function()
-    MainButton.Text = "YÜKLENİYOR..."
-    MainButton.BackgroundColor3 = Color3.fromRGB(200, 150, 0)
-    
-    -- Senin verdiğin o GUI'siz kodu burada çalıştırıyoruz
-    local success, err = pcall(function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/ygtk2010zx-bit/Main./refs/heads/main/Aim"))()
-    end)
-    
-    if success then
-        MainButton.Text = "AKTİF!"
-        MainButton.BackgroundColor3 = Color3.fromRGB(0, 180, 0)
-        wait(2)
-        MainButton.Text = "TEKRAR BAS" -- Bazı scriptler hata verirse diye
-    else
-        MainButton.Text = "HATA!"
-        MainButton.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
-        warn("Hata oluştu: " .. err)
-        wait(2)
-        MainButton.Text = "AIM ÇALIŞTIR"
+local active = false
+local Camera = workspace.CurrentCamera
+local LocalPlayer = game.Players.LocalPlayer
+
+-- En yakın oyuncuyu bulma fonksiyonu
+local function getClosestPlayer()
+    local target = nil
+    local dist = math.huge
+    for _, v in pairs(game.Players:GetPlayers()) do
+        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+            local pos, onScreen = Camera:WorldToViewportPoint(v.Character.HumanoidRootPart.Position)
+            if onScreen then
+                local magnitude = (Vector2.new(pos.X, pos.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
+                if magnitude < dist then
+                    target = v
+                    dist = magnitude
+                end
+            end
+        end
+    end
+    return target
+end
+
+-- Sürekli kilitlenme döngüsü
+game:GetService("RunService").RenderStepped:Connect(function()
+    if active then
+        local target = getClosestPlayer()
+        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+            -- Kamerayı doğrudan hedefin kafasına/gövdesine kilitler
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Character.HumanoidRootPart.Position)
+        end
     end
 end)
 
-print("Kontrol Butonu Eklendi!")
+MainButton.MouseButton1Click:Connect(function()
+    active = not active
+    if active then
+        MainButton.Text = "KİLİTLENDİ 🎯"
+        MainButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    else
+        MainButton.Text = "AIMLOCK: KAPALI"
+        MainButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    end
+end)
