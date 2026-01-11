@@ -1,47 +1,46 @@
--- MM2 Sıkı Aimlock & Silent Aim
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
-local RunService = game:GetService("RunService")
+-- Basit Kontrol Paneli
+local ScreenGui = Instance.new("ScreenGui")
+local MainButton = Instance.new("TextButton")
+local UICorner = Instance.new("UICorner")
 
--- Ayarlar
-_G.AimlockEnabled = true
-_G.TeamCheck = true -- Sadece rakibi (Katili) hedef alır
-_G.AimPart = "UpperTorso" -- Kilitlenme noktası (Head, UpperTorso veya HumanoidRootPart)
-_G.Sensitivity = 0 -- 0 yaparsan "sıkı" olur, anında kilitlenir
+-- Panel Ayarları
+ScreenGui.Name = "CustomAimControl"
+ScreenGui.Parent = game:GetService("CoreGui") -- Delta kapansa da gitmemesi için
 
-local function getClosestPlayer()
-    local closestPlayer = nil
-    local shortestDistance = math.huge
+MainButton.Name = "ToggleButton"
+MainButton.Parent = ScreenGui
+MainButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+MainButton.Position = UDim2.new(0.05, 0, 0.4, 0) -- Ekranın sol ortası
+MainButton.Size = UDim2.new(0, 120, 0, 45)
+MainButton.Text = "AIM ÇALIŞTIR"
+MainButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+MainButton.Font = Enum.Font.SourceSansBold
+MainButton.TextSize = 18
 
-    for _, v in pairs(Players:GetPlayers()) do
-        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 then
-            
-            -- MM2 Rol Kontrolü (Sadece Katili Hedefle)
-            local isMurderer = v.Backpack:FindFirstChild("Knife") or v.Character:FindFirstChild("Knife")
-            
-            if isMurderer then
-                local screenPoint = Camera:WorldToViewportPoint(v.Character[_G.AimPart].Position)
-                local distance = (Vector2.new(screenPoint.X, screenPoint.Y) - Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)).Magnitude
-                
-                if distance < shortestDistance then
-                    closestPlayer = v
-                    shortestDistance = distance
-                end
-            end
-        end
-    end
-    return closestPlayer
-end
+UICorner.Parent = MainButton
 
-RunService.RenderStepped:Connect(function()
-    if _G.AimlockEnabled then
-        local target = getClosestPlayer()
-        if target and target.Character then
-            -- Kamerayı hedefe anında kilitler (Sıkı Takip)
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Character[_G.AimPart].Position)
-        end
+-- Tıklama Fonksiyonu
+MainButton.MouseButton1Click:Connect(function()
+    MainButton.Text = "YÜKLENİYOR..."
+    MainButton.BackgroundColor3 = Color3.fromRGB(200, 150, 0)
+    
+    -- Senin verdiğin o GUI'siz kodu burada çalıştırıyoruz
+    local success, err = pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/ygtk2010zx-bit/Main./refs/heads/main/Aim"))()
+    end)
+    
+    if success then
+        MainButton.Text = "AKTİF!"
+        MainButton.BackgroundColor3 = Color3.fromRGB(0, 180, 0)
+        wait(2)
+        MainButton.Text = "TEKRAR BAS" -- Bazı scriptler hata verirse diye
+    else
+        MainButton.Text = "HATA!"
+        MainButton.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
+        warn("Hata oluştu: " .. err)
+        wait(2)
+        MainButton.Text = "AIM ÇALIŞTIR"
     end
 end)
 
-print("Sıkı Aimlock Aktif! Sadece Katil hedefleniyor.")
+print("Kontrol Butonu Eklendi!")
