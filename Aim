@@ -1,23 +1,66 @@
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
+local lp = game.Players.LocalPlayer
+local mouse = lp:GetMouse()
+local camera = workspace.CurrentCamera
+local rs = game:GetService("RunService")
 
--- Kontrol Değişkenleri
-_G.AimActive = true -- Hileyi tamamen kapatmak istersen false yap
+-- GUI OLUŞTURMA
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "GoonMM2"
+ScreenGui.Parent = game:GetService("CoreGui")
 
-local function getClosestPlayer()
+local Main = Instance.new("Frame")
+Main.Size = UDim2.new(0, 200, 0, 180)
+Main.Position = UDim2.new(0.5, -100, 0.2, 0)
+Main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Main.BorderSizePixel = 2
+Main.Active = true
+Main.Draggable = true
+Main.Parent = ScreenGui
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.Text = "GOON MM2 MENU"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+Title.Parent = Main
+
+-- Buton Oluşturucu Fonksiyon
+local function createBtn(text, pos, color)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.9, 0, 0, 35)
+    btn.Position = pos
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.BackgroundColor3 = color
+    btn.Parent = Main
+    return btn
+end
+
+local AimBtn = createBtn("AIMLOCK: KAPALI", UDim2.new(0.05, 0, 0.25, 0), Color3.fromRGB(60, 0, 0))
+local EspBtn = createBtn("ESP: KAPALI", UDim2.new(0.05, 0, 0.55, 0), Color3.fromRGB(60, 0, 0))
+
+-- DEĞİŞKENLER
+local aimActive = false
+local espActive = false
+
+-- AIMLOCK SİSTEMİ (GARANTİ KİLİT)
+AimBtn.MouseButton1Click:Connect(function()
+    aimActive = not aimActive
+    AimBtn.Text = aimActive and "AIMLOCK: AÇIK" or "AIMLOCK: KAPALI"
+    AimBtn.BackgroundColor3 = aimActive and Color3.fromRGB(0, 120, 0) or Color3.fromRGB(60, 0, 0)
+end)
+
+function getClosest()
     local target = nil
-    local shortestDistance = math.huge
-
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            local pos, onScreen = Camera:WorldToViewportPoint(player.Character.HumanoidRootPart.Position)
-            if onScreen then
-                local distance = (Vector2.new(pos.X, pos.Y) - Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)).Magnitude
-                if distance < shortestDistance then
-                    target = player
-                    shortestDistance = distance
+    local dist = math.huge
+    for _, v in pairs(game.Players:GetPlayers()) do
+        if v ~= lp and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+            local pos, vis = camera:WorldToViewportPoint(v.Character.HumanoidRootPart.Position)
+            if vis then
+                local mag = (Vector2.new(pos.X, pos.Y) - Vector2.new(mouse.X, mouse.Y)).Magnitude
+                if mag < dist then
+                    target = v.Character.HumanoidRootPart
+                    dist = mag
                 end
             end
         end
@@ -25,14 +68,46 @@ local function getClosestPlayer()
     return target
 end
 
-RunService.RenderStepped:Connect(function()
-    if _G.AimActive then
-        local target = getClosestPlayer()
-        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-            -- Kilitlenme buradadır (Sıkı takip)
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Character.HumanoidRootPart.Position)
+rs.RenderStepped:Connect(function()
+    if aimActive then
+        local t = getClosest()
+        if t then
+            -- Kamerayı doğrudan hedefe odaklar (Sekmez)
+            camera.CFrame = CFrame.new(camera.CFrame.Position, t.Position)
         end
     end
 end)
 
-print("Sıkı Aimlock aktif edildi! Kapatmak için Scripti durdurun.")
+-- ESP SİSTEMİ (KATİL VE ŞERİF)
+EspBtn.MouseButton1Click:Connect(function()
+    espActive = not espActive
+    EspBtn.Text = espActive and "ESP: AÇIK" or "ESP: KAPALI"
+    EspBtn.BackgroundColor3 = espActive and Color3.fromRGB(0, 120, 0) or Color3.fromRGB(60, 0, 0)
+end)
+
+rs.Heartbeat:Connect(function()
+    for _, v in pairs(game.Players:GetPlayers()) do
+        if v ~= lp and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+            local char = v.Character
+            local box = char:FindFirstChild("GoonESP") or Instance.new("Highlight")
+            
+            if espActive then
+                box.Name = "GoonESP"
+                box.Parent = char
+                box.FillTransparency = 0.5
+                box.OutlineTransparency = 0
+                
+                -- Renk Ayarı (Katil=Kırmızı, Şerif=Mavi, Diğer=Beyaz)
+                if char:FindFirstChild("Knife") or v.Backpack:FindFirstChild("Knife") then
+                    box.FillColor = Color3.fromRGB(255, 0, 0)
+                elseif char:FindFirstChild("Gun") or v.Backpack:FindFirstChild("Gun") then
+                    box.FillColor = Color3.fromRGB(0, 0, 255)
+                else
+                    box.FillColor = Color3.fromRGB(255, 255, 255)
+                end
+            else
+                if char:FindFirstChild("GoonESP") then char.GoonESP:Destroy() end
+            end
+        end
+    end
+end)
