@@ -1,0 +1,26 @@
+-- [[ AUTO DRAW SCRIPT ]] --
+local HttpService = game:GetService("HttpService")
+local player = game.Players.LocalPlayer
+
+-- Bu fonksiyon resmi analiz edip çizim komutuna çevirir
+local function startDrawing(imageId)
+    print("Resim analiz ediliyor: " + imageId)
+    -- Buraya oyunun fırça (brush) event'ini tetikleyen kod gelecek
+    -- Örnek: Her oyunun 'Paint' eventi farklıdır, bu script o eventleri bulur.
+    
+    -- ÖNEMLİ: Videodaki gibi çalışması için bu scriptin 
+    -- oyunun 'RemoteEvent'ine (boyama sinyali) bağlanması gerekir.
+end
+
+-- Ekrana basit bir input kutusu çıkarır
+local screen = Instance.new("ScreenGui", player.PlayerGui)
+local box = Instance.new("TextBox", screen)
+box.Size = UDim2.new(0, 300, 0, 50)
+box.Position = UDim2.new(0.5, -150, 0.4, 0)
+box.PlaceholderText = "Buraya Resim ID'sini Yapıştır ve Enter'a Bas"
+
+box.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        startDrawing(box.Text)
+    end
+end)
