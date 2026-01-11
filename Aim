@@ -1,0 +1,47 @@
+-- MM2 Sıkı Aimlock & Silent Aim
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local RunService = game:GetService("RunService")
+
+-- Ayarlar
+_G.AimlockEnabled = true
+_G.TeamCheck = true -- Sadece rakibi (Katili) hedef alır
+_G.AimPart = "UpperTorso" -- Kilitlenme noktası (Head, UpperTorso veya HumanoidRootPart)
+_G.Sensitivity = 0 -- 0 yaparsan "sıkı" olur, anında kilitlenir
+
+local function getClosestPlayer()
+    local closestPlayer = nil
+    local shortestDistance = math.huge
+
+    for _, v in pairs(Players:GetPlayers()) do
+        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 then
+            
+            -- MM2 Rol Kontrolü (Sadece Katili Hedefle)
+            local isMurderer = v.Backpack:FindFirstChild("Knife") or v.Character:FindFirstChild("Knife")
+            
+            if isMurderer then
+                local screenPoint = Camera:WorldToViewportPoint(v.Character[_G.AimPart].Position)
+                local distance = (Vector2.new(screenPoint.X, screenPoint.Y) - Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)).Magnitude
+                
+                if distance < shortestDistance then
+                    closestPlayer = v
+                    shortestDistance = distance
+                end
+            end
+        end
+    end
+    return closestPlayer
+end
+
+RunService.RenderStepped:Connect(function()
+    if _G.AimlockEnabled then
+        local target = getClosestPlayer()
+        if target and target.Character then
+            -- Kamerayı hedefe anında kilitler (Sıkı Takip)
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Character[_G.AimPart].Position)
+        end
+    end
+end)
+
+print("Sıkı Aimlock Aktif! Sadece Katil hedefleniyor.")
